@@ -3,31 +3,17 @@ const X='X', O='O'
 
 class Board {
   constructor(game) {
-    this.game = game;
-    this.cells = {}
     const rows = ['T','M','B']
     const cols = ['L','M','R']
     rows.forEach(row=>{
       cols.forEach(col=>{
-        this.cells[row+col] = ' '
+        this[row+col] = ' '
       })
     })
   }
-  placePiece(cell) {
-    if (!this.cells[cell]) {
-      console.error('invalid cell')
-    }
-    else if (this.cells[cell] !== ' ') {
-      console.error('cell taken')
-    }
-    else {
-      this.cells[cell] = this.game.turn
-      this.render()
-    }
-  }
   render() {
     process.stdout.write('\x1B[2J\x1B[0f')
-    const { TL, TM, TR, ML, MM, MR, BL, BM, BR } = this.cells
+    const { TL, TM, TR, ML, MM, MR, BL, BM, BR } = this
     console.log(
       `input move in the following format:\n`+
       `first letter of row + \n`+
@@ -44,11 +30,12 @@ class Board {
 
 class Game {
   constructor() {
-    this.board = new Board(this)
+    this.board = new Board()
     this.turn = X
   }
   promptMove() {
-    prompt.message=`${game.turn}'s turn\n`
+    this.board.render()
+    prompt.message=`${this.turn}'s turn\n`
     prompt.get({
       properties: {
         cell: {
@@ -59,32 +46,66 @@ class Game {
       let cell = result.cell.toUpperCase()
       if (cell === 'QUIT') this.quit(this.turn)
       else {
-        this.board.placePiece(cell)
-        this.turn = this.turn === X ? O : X
-        this.winCheck()
-          ? this.endGame()
-          : this.promptMove()
+        this.placePiece(cell)
+        if (this.winCheck()) this.endGame()
+        else {
+          this.turn = this.turn === X ? O : X
+          this.promptMove()
+        }
       }
     })
+  }
+  placePiece(cell) {
+    if (!this.board[cell]) {
+      console.error('invalid cell')
+      this.promptMove()
+    }
+    else if (this.board[cell] !== ' ') {
+      console.error('cell taken')
+      this.promptMove()
+    }
+    else {
+      this.board[cell] = this.turn
+      this.board.render()
+    }
   }
   winCheck() {
     let winner = null
     const runs = [
-      ['TR','TM','TL'],
-      ['MR','MM','MR'],
-      ['BR','BM','BR'],
-      ['TR','MR','BR'],
-      ['TM','MM','BM'],
+      ['TL','TM','TR'],
+      ['ML','MM','MR'],
+      ['BL','BM','BR'],
       ['TL','ML','BL'],
+      ['TM','MM','BM'],
+      ['TR','MR','BR'],
       ['TL','MM','BR'],
       ['TR','MM','BL']      
     ]
-    runs.forEach(run=>{
-      if (run[0]===run[1] && run[1]===run[2])
-        winner = run[0]
+    return runs.some(run=>{
+      return run.every(cell=>{
+        return this.board[cell] === this.turn
+      })
     })
-    console.log('winner:',winner)
-    return winner
+  }
+  endGame() {
+    console.log(`${this.turn} wins!`)
+    prompt.message='Play again?'
+    prompt.get({
+      properties: {
+        again: {
+          description:'Y or N'
+        }
+      }
+    },(err, result)=>{
+      if (result.again.toUpperCase() === 'Y'){
+        this.board = new Board()
+        this.board.render()
+        this.promptMove()
+      } else {
+        return
+      }
+      
+    })
   }
   quit(player) {
     console.log(`${player} has quit the game`)
@@ -93,6 +114,5 @@ class Game {
 }
 
 const game = new Game()
-game.board.render()
 prompt.start()
 game.promptMove()
