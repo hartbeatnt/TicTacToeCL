@@ -30,11 +30,13 @@ class Board {
 
 class Game {
   constructor() {
+    prompt.start()
     this.board = new Board()
     this.turn = X
+    this.board.render()
+    this.promptMove()
   }
   promptMove() {
-    this.board.render()
     prompt.message=`${this.turn}'s turn\n`
     prompt.get({
       properties: {
@@ -46,27 +48,31 @@ class Game {
       let cell = result.cell.toUpperCase()
       if (cell === 'QUIT') this.quit(this.turn)
       else {
-        this.placePiece(cell)
-        if (this.winCheck()) this.endGame()
-        else {
-          this.turn = this.turn === X ? O : X
-          this.promptMove()
+        if (this.placePiece(cell)) {
+          if (this.winCheck()) this.endGame()
+          else {
+            this.turn = this.turn === X ? O : X
+            this.promptMove()
+          }
         }
       }
     })
   }
   placePiece(cell) {
     if (!this.board[cell]) {
-      console.error('invalid cell')
+      console.error('invalid cell!')
       this.promptMove()
+      return false
     }
     else if (this.board[cell] !== ' ') {
-      console.error('cell taken')
+      console.error('cell taken!')
       this.promptMove()
+      return false
     }
     else {
       this.board[cell] = this.turn
       this.board.render()
+      return true;
     }
   }
   winCheck() {
@@ -114,5 +120,3 @@ class Game {
 }
 
 const game = new Game()
-prompt.start()
-game.promptMove()
